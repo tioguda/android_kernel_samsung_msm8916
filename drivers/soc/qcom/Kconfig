@@ -589,6 +589,13 @@ config FORCE_FAST_CHARGE
  	  This allows users to override default charge rate for both USB and AC
  	  charger input current 
 
+config AUTOSMP
+	bool "Multi-core automatic hotplug support"
+	depends on SMP && HOTPLUG_CPU
+	help
+	  Automatically hotplugs the multiple cpu cores on and off
+	  based on cpu load and suspend state
+
 source "drivers/soc/qcom/memshare/Kconfig"
 
 source "drivers/soc/qcom/samsung/Kconfig"

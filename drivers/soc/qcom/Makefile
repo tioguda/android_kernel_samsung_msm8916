@@ -83,4 +83,5 @@ obj-$(CONFIG_FORCE_FAST_CHARGE) += fastchg.o
 
 obj-y		+= samsung/
 obj-$(CONFIG_STATE_NOTIFIER)	+= state_notifier.o
+obj-$(CONFIG_AUTOSMP)		+= autosmp.o
 obj-$(CONFIG_MSM_LIMITER) += msm_limiter.o
