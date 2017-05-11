@@ -156,6 +156,15 @@ static int scfs_file_release(struct inode *inode, struct file *file)
 	return 0;
 }
 
+struct scfs_getdents_callback {
+	struct dir_context ctx;
+	void *dirent;
+	struct dentry *dentry;
+	filldir_t filldir;
+	int filldir_called;
+	int entries_written;
+};
+
 /*
  * scfs_readdir
  */
@@ -163,15 +172,26 @@ static int scfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 {
 	struct file *lower_file = NULL;
 	struct dentry *dentry = file->f_path.dentry;
+	struct scfs_getdents_callback buf;
 	int ret = 0;
 
 	lower_file = scfs_lower_file(file);
 	lower_file->f_pos = file->f_pos;
-	ret = vfs_readdir(lower_file, filldir, dirent);
+	memset(&buf, 0, sizeof(buf));
+	buf.dirent = dirent;
+	buf.dentry = file->f_path.dentry;
+	buf.filldir = filldir;
+	buf.filldir_called = 0;
+	buf.entries_written = 0;
+	ret = iterate_dir(lower_file, &buf.ctx);
 	file->f_pos = lower_file->f_pos;
+	if (ret < 0)
+		goto out;
+	if (buf.filldir_called && !buf.entries_written)
+		goto out;
 	if (ret >= 0)
 		fsstack_copy_attr_atime(dentry->d_inode, lower_file->f_path.dentry->d_inode);
-
+out:
 	return ret;
 }
 
