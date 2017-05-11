@@ -626,9 +626,7 @@ static int allocate_extra_arg_buffer(struct scm_desc *desc, gfp_t flags)
 
 	return 0;
 }
-#ifdef CONFIG_TIMA_LKMAUTH
-pid_t pid_from_lkm = -1;
-#endif
+
 /**
  * scm_call2() - Invoke a syscall in the secure world
  * @fn_id: The function ID for this syscall
@@ -677,11 +675,7 @@ int scm_call2(u32 fn_id, struct scm_desc *desc)
 		pr_debug("scm_call: func id %#llx, args: %#x, %#llx, %#llx, %#llx, %#llx\n",
 			x0, desc->arginfo, desc->args[0], desc->args[1],
 			desc->args[2], desc->x5);
-#ifdef CONFIG_TIMA_LKMAUTH
-		if (call_from_ss_daemon || ( pid_from_lkm == current_thread_info()->task->pid)) {
-#else
 		if (call_from_ss_daemon) {
-#endif
 			flush_cache_all();
 
 #if defined(CONFIG_ARCH_MSM8916) || defined(CONFIG_ARCH_MSM8226) || defined(CONFIG_ARCH_MSM8929) || defined(CONFIG_ARCH_MSM8939)
@@ -1214,22 +1208,3 @@ int scm_restore_sec_cfg(u32 device_id, u32 spare, int *scm_ret)
 	return 0;
 }
 EXPORT_SYMBOL(scm_restore_sec_cfg);
-
-int kap_status_scm_call(void)
-{
-    int ret;
-    struct scm_desc descrp = {0};
-    uint32_t resp = 4;
-
-    descrp.arginfo = SCM_ARGS(4, SCM_VAL, SCM_VAL, SCM_RW, SCM_VAL);
-    descrp.args[0] = CMD_READ_KAP_STATUS; //command Read
-    descrp.args[1] = 0;
-    descrp.args[2] = virt_to_phys((void*)&resp); // Respnse
-    descrp.args[3] = 4;
-
-    ret = scm_call2(MAKE_OEM_SCM_CMD(TZBSP_SVC_OEM_GENERIC, OEM_GENERIC_CMD_ID), &descrp);
-    if(!ret)
-	return descrp.ret[0];
-    return 0;
-}
-EXPORT_SYMBOL(kap_status_scm_call);

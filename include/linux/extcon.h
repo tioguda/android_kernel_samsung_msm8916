@@ -27,6 +27,10 @@
 #include <linux/notifier.h>
 #include <linux/sysfs.h>
 
+#define SUPPORTED_CABLE_MAX (EXTCON_NONE + 1)
+#define CABLE_NAME_MAX		SUPPORTED_CABLE_MAX
+
+
 #define EXTCON_DEV_NAME			"extcon-muic"
 /*
  * The standard cable name is to help support general notifier
@@ -88,9 +92,6 @@ enum extcon_cable_name {
 	EXTCON_UNKNOWN,
 	EXTCON_NONE,
 };
-
-#define SUPPORTED_CABLE_MAX (EXTCON_NONE + 1)
-#define CABLE_NAME_MAX		SUPPORTED_CABLE_MAX
 
 extern const char *extcon_cable_name[CABLE_NAME_MAX + 1];
 

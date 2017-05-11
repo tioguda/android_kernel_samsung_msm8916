@@ -30,9 +30,14 @@ static const int cfq_back_penalty = 2;
 static const int cfq_slice_sync = HZ / 10;
 static int cfq_slice_async = HZ / 25;
 static const int cfq_slice_async_rq = 2;
-/* Explicitly set cfq_slice_idle to 0 */
+/* Explicitly set cfq_slice_idle to 0 
+ * Much like CFQ, BFQ slice idle should be 0 since
+ * we do not have a SATA or other spinning disk type storage.
+ * From the documentation "Setting slice_idle to 0 will remove
+ * all the idling on queues/service tree level and one should
+ * see an overall improved throughput on faster storage devices"
+ */
 static int cfq_slice_idle = 0;
-/*static int cfq_slice_idle = HZ / 125;*/
 static int cfq_group_idle = HZ / 125;
 static const int cfq_target_latency = HZ * 3/10; /* 300 ms */
 static const int cfq_hist_divisor = 4;

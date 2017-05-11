@@ -21,6 +21,8 @@
 #include "sdcardfs.h"
 #include "linux/delay.h"
 
+#define LOOKUP_CASE_INSENSITIVE	0x8000
+
 /* The dentry cache is just so we have properly sized dentries */
 static struct kmem_cache *sdcardfs_dentry_cachep;
 
