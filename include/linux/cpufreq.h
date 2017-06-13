@@ -16,6 +16,8 @@
 #include <linux/kobject.h>
 #include <linux/notifier.h>
 #include <linux/sysfs.h>
+#include <linux/clk.h>
+#include <linux/spinlock.h>
 #include <asm/cputime.h>
 
 /*********************************************************************
@@ -442,6 +444,9 @@ extern struct cpufreq_governor cpufreq_gov_dancedance;
 #elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_IMPULSE)
 extern struct cpufreq_governor cpufreq_gov_impulse;
 #define CPUFREQ_DEFAULT_GOVERNOR	(&cpufreq_gov_impulse)
+#elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_ALUCARD)
+extern struct cpufreq_governor cpufreq_gov_alucard;
+#define CPUFREQ_DEFAULT_GOVERNOR	(&cpufreq_gov_alucard)
 #endif
 
 /*********************************************************************
@@ -456,6 +461,22 @@ struct cpufreq_frequency_table {
 	unsigned int	frequency; /* kHz - doesn't need to be in ascending
 				    * order */
 };
+
+static inline bool cpufreq_next_valid(struct cpufreq_frequency_table **pos)
+{
+	while ((*pos)->frequency != CPUFREQ_TABLE_END)
+		if ((*pos)->frequency != CPUFREQ_ENTRY_INVALID)
+			return true;
+		else
+			(*pos)++;
+	return false;
+}
+
+#define cpufreq_for_each_entry(pos, table)	\
+	for (pos = table; pos->frequency != CPUFREQ_TABLE_END; pos++)
+
+#define cpufreq_for_each_valid_entry(pos, table)	\
+for (pos = table; cpufreq_next_valid(&pos); pos++)
 
 int cpufreq_frequency_table_cpuinfo(struct cpufreq_policy *policy,
 				    struct cpufreq_frequency_table *table);
@@ -472,6 +493,7 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
 
 void cpufreq_frequency_table_update_policy_cpu(struct cpufreq_policy *policy);
 ssize_t cpufreq_show_cpus(const struct cpumask *mask, char *buf);
+int cpufreq_frequency_table_get_index(struct cpufreq_policy *policy, unsigned int freq);
 
 /* the following funtion is for cpufreq core use only */
 struct cpufreq_frequency_table *cpufreq_frequency_get_table(unsigned int cpu);
