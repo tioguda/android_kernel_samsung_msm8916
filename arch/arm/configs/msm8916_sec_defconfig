@@ -716,6 +716,9 @@ CONFIG_SECCOMP=y
 # TTL
 CONFIG_IP_NF_TARGET_TTL=y
 
+#Input Disabler
+CONFIG_INPUT_DISABLER=y
+
 #
 # Qualcomm Atheros Prima WLAN module
 #
