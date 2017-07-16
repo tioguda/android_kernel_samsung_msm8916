@@ -49,6 +49,11 @@
 
 #include "zinitix_bt541_ts.h"
 
+#ifdef CONFIG_INPUT_DISABLER
+#include <linux/input/zinitix_bt541_tsp.h>
+struct input_dev *tcontrol_zinitix_bt541 = NULL;
+#endif
+
 #if (TSP_TYPE_COUNT == 1)
 u8 *m_pFirmware [TSP_TYPE_COUNT] = {(u8*)m_firmware_data,};
 #else
@@ -4950,7 +4955,9 @@ static int bt541_ts_probe(struct i2c_client *client,
 		goto err_kthread_create_failed;
 	}
 #endif
-
+#ifdef CONFIG_INPUT_DISABLER
+    tcontrol_zinitix_bt541 = input_dev;
+#endif
 	return 0;
 
 #ifdef SEC_FACTORY_TEST
@@ -5026,6 +5033,9 @@ static int bt541_ts_remove(struct i2c_client *client)
 		if (gpio_is_valid(pdata->tsp_en_gpio) != 0)
 			gpio_free(pdata->tsp_en_gpio);
 
+#ifdef CONFIG_INPUT_DISABLER
+    tcontrol_zinitix_bt541 = NULL;
+#endif
 	input_unregister_device(info->input_dev);
 	input_free_device(info->input_dev);
 	up(&info->work_lock);
@@ -5095,6 +5105,29 @@ static void __exit bt541_ts_exit(void)
 {
 	i2c_del_driver(&bt541_ts_driver);
 }
+
+#ifdef CONFIG_INPUT_DISABLER
+int zinitix_bt541_set_status(bool status)
+{
+    struct bt541_ts_info *info0 = input_get_drvdata(tcontrol_zinitix_bt541);
+
+    if (!tcontrol_zinitix_bt541)
+        return -2;
+
+    if (info0->device_enabled == status)
+        return -1;
+
+    if (status)
+    {
+        bt541_input_open(tcontrol_zinitix_bt541);
+    }
+    else
+    {
+        bt541_input_close(tcontrol_zinitix_bt541);
+    }
+    return 0;
+}
+#endif
 
 module_init(bt541_ts_init);
 module_exit(bt541_ts_exit);
