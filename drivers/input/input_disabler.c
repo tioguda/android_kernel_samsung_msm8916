@@ -36,6 +36,8 @@
  * @ Smart enabling: enable device ONLY if he was disabled
  *   using THIS service.
  *
+ * @ Make config for touchSCREEN devices disabling 
+ *   for integrate with DT2W.
  */
 
 void inputdisabler_set_touch(bool status)
@@ -43,11 +45,15 @@ void inputdisabler_set_touch(bool status)
     int cntsucc = 0;
     int cntall = 0;
 
+/* Touch Buttons */
+
 #ifdef CONFIG_KEYBOARD_ABOV_TOUCH_A3
     cntall++;
-    if (abov_a3_set_status(status))
+    if (abov_a3_set_status(status) == 0)
         cntsucc++;
 #endif
+
+/* Touch Screens */
 
     pr_info("inputdisabler: %d of %d devices was %s", cntsucc, cntall, status ? "enabled" : "disabled");
 
