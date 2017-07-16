@@ -40,7 +40,7 @@
 
 #ifdef CONFIG_INPUT_DISABLER
 #include <linux/input/abov_tk_a3.h>
-struct input_dev *tcontrol = NULL;
+struct input_dev *tcontrol_abov_a3 = NULL;
 #endif
 
 /* registers */
@@ -1564,7 +1564,7 @@ static int abov_tk_probe(struct i2c_client *client,
 	dev_err(&client->dev, "%s done\n", __func__);
 	info->probe_done = true;
 #ifdef CONFIG_INPUT_DISABLER
-    tcontrol = input_dev;
+    tcontrol_abov_a3 = input_dev;
 #endif
 	return 0;
 
@@ -1619,7 +1619,7 @@ static int abov_tk_remove(struct i2c_client *client)
 	if (info->irq >= 0)
 		free_irq(info->irq, info);
 #ifdef CONFIG_INPUT_DISABLER
-    tcontrol = NULL;
+    tcontrol_abov_a3 = NULL;
 #endif
 	input_unregister_device(info->input_dev);
 	input_free_device(info->input_dev);
@@ -1785,9 +1785,9 @@ static void __exit touchkey_exit(void)
 #ifdef CONFIG_INPUT_DISABLER
 int abov_a3_set_status(bool status)
 {
-    struct abov_tk_info *info0 = input_get_drvdata(tcontrol);
+    struct abov_tk_info *info0 = input_get_drvdata(tcontrol_abov_a3);
 
-    if (!tcontrol)
+    if (!tcontrol_abov_a3)
         return -2;
 
     if (info0->enabled == status)
@@ -1795,11 +1795,11 @@ int abov_a3_set_status(bool status)
 
     if (status)
     {
-        abov_tk_input_open(tcontrol);
+        abov_tk_input_open(tcontrol_abov_a3);
     }
     else
     {
-        abov_tk_input_close(tcontrol);
+        abov_tk_input_close(tcontrol_abov_a3);
     }
     return 0;
 }
