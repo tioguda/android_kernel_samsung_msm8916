@@ -38,6 +38,11 @@
 #include <linux/of_gpio.h>
 #endif
 
+#ifdef CONFIG_INPUT_DISABLER
+#include <linux/input/abov_tk_a3.h>
+struct input_dev *tcontrol = NULL;
+#endif
+
 /* registers */
 #define ABOV_BTNSTATUS		0x00
 #define ABOV_FW_VER		0x01
@@ -1558,7 +1563,9 @@ static int abov_tk_probe(struct i2c_client *client,
 
 	dev_err(&client->dev, "%s done\n", __func__);
 	info->probe_done = true;
-
+#ifdef CONFIG_INPUT_DISABLER
+    tcontrol = input_dev;
+#endif
 	return 0;
 
 err_req_irq:
@@ -1611,6 +1618,9 @@ static int abov_tk_remove(struct i2c_client *client)
 	info->enabled = false;
 	if (info->irq >= 0)
 		free_irq(info->irq, info);
+#ifdef CONFIG_INPUT_DISABLER
+    tcontrol = NULL;
+#endif
 	input_unregister_device(info->input_dev);
 	input_free_device(info->input_dev);
 	kfree(info);
@@ -1771,6 +1781,29 @@ static void __exit touchkey_exit(void)
 {
 	i2c_del_driver(&abov_tk_driver);
 }
+
+#ifdef CONFIG_INPUT_DISABLER
+int abov_a3_set_status(bool status)
+{
+    struct abov_tk_info *info0 = input_get_drvdata(tcontrol);
+
+    if (!tcontrol)
+        return -2;
+
+    if (info0->enabled == status)
+        return -1;
+
+    if (status)
+    {
+        abov_tk_input_open(tcontrol);
+    }
+    else
+    {
+        abov_tk_input_close(tcontrol);
+    }
+    return 0;
+}
+#endif
 
 module_init(touchkey_init);
 module_exit(touchkey_exit);
