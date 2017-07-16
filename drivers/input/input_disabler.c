@@ -22,6 +22,10 @@
 #include <linux/input/abov_tk_a3.h>
 #endif
 
+#ifdef CONFIG_TOUCHSCREEN_ZINITIX_BT541
+#include <linux/input/zinitix_bt541_tsp.h>
+#endif
+
 /*
  * InputDisabler is the touch-devices management service in Samsung MSM8916 kernels.
  *
@@ -45,7 +49,7 @@ void inputdisabler_set_touch(bool status)
     int cntsucc = 0;
     int cntall = 0;
 
-/* Touch Buttons */
+/* TouchKeys */
 
 #ifdef CONFIG_KEYBOARD_ABOV_TOUCH_A3
     cntall++;
@@ -53,7 +57,13 @@ void inputdisabler_set_touch(bool status)
         cntsucc++;
 #endif
 
-/* Touch Screens */
+/* TouchScreens */
+
+#ifdef CONFIG_TOUCHSCREEN_ZINITIX_BT541
+    cntall++;
+    if (zinitix_bt541_set_status(status) == 0)
+        cntsucc++;
+#endif
 
     pr_info("inputdisabler: %d of %d devices was %s", cntsucc, cntall, status ? "enabled" : "disabled");
 
