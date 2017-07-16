@@ -48,21 +48,53 @@ void inputdisabler_set_touch(bool status)
 {
     int cntsucc = 0;
     int cntall = 0;
+    int ret = 0;
+
+pr_info("inputdisabler: preparing to %s devices", status ? "enable" : "disable");
 
 /* TouchKeys */
 
 #ifdef CONFIG_KEYBOARD_ABOV_TOUCH_A3
     cntall++;
-    if (abov_a3_set_status(status) == 0)
-        cntsucc++;
+    ret = abov_a3_set_status(status);
+    switch (ret)
+    {
+        case 0:
+            cntsucc++;
+            pr_info("inputdisabler: I: %s was successfilly %s", "ABOV_A3_TK", status ? "enabled" : "disabled");
+            break;
+        case -1:
+            pr_info("inputdisabler: E: %s is already %s", "ABOV_A3_TK", status ? "enabled" : "disabled");
+            break;
+        case -2:
+            pr_info("inputdisabler: E: %s is not ready", "ABOV_A3_TK");
+            break;
+        default:
+            pr_info("inputdisabler: E: %s - Unknown Error", "ABOV_A3_TK");
+    }
+            
 #endif
 
 /* TouchScreens */
 
 #ifdef CONFIG_TOUCHSCREEN_ZINITIX_BT541
     cntall++;
-    if (zinitix_bt541_set_status(status) == 0)
-        cntsucc++;
+    ret = zinitix_bt541_set_status(status);
+    switch (ret)
+    {
+        case 0:
+            cntsucc++;
+            pr_info("inputdisabler: I: %s was successfilly %s", "ZINITIX_BT541_TS", status ? "enabled" : "disabled");
+            break;
+        case -1:
+            pr_info("inputdisabler: E: %s is already %s", "ZINITIX_BT541_TS", status ? "enabled" : "disabled");
+            break;
+        case -2:
+            pr_info("inputdisabler: E: %s is not ready", "ZINITIX_BT541_TS");
+            break;
+        default:
+            pr_info("inputdisabler: E: %s - Unknown Error", "ZINITIX_BT541_TS");
+    }
 #endif
 
     pr_info("inputdisabler: %d of %d devices was %s", cntsucc, cntall, status ? "enabled" : "disabled");
