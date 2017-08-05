@@ -79,6 +79,7 @@ static int32_t msm_led_trigger_config(struct msm_led_flash_ctrl_t *fctrl,
 {
 	int rc = 0;
 	struct msm_camera_led_cfg_t *cfg = (struct msm_camera_led_cfg_t *)data;
+	int flash_id = 0;
 	sm_fled_info_t *fled_info = sm_fled_get_info_by_name(NULL);
 	CDBG("called led_state %d\n", cfg->cfgtype);
 
@@ -87,124 +88,142 @@ static int32_t msm_led_trigger_config(struct msm_led_flash_ctrl_t *fctrl,
 		return -EINVAL;
 	}
 
+	pr_err("[CAM_LED]FLASH ID:%d\n", cfg->torch_current);
+	switch (cfg->torch_current) {
+		case 0:
+			flash_id = BACK_CAMERA_B;
+			break;
+
+		case 1:
+			flash_id = FRONT_CAMERA_B;
+			break;
+
+		case 3:
+			flash_id = 4;	//INIT&RELEASE
+			break;
+
+		default:
+			pr_err("[CAM_LED]default is back:%d\n", cfg->torch_current);
+			flash_id = 0;
+			break;
+	}
 
 	switch (cfg->cfgtype) {
 	case MSM_CAMERA_LED_OFF:
-		pr_err("MSM_CAMERA_LED_OFF\n");
+			pr_err("[CAM_LED]LED STATE OFF.\n");
+			if(flash_id == FRONT_CAMERA_B){
 #if defined(CONFIG_FLED_LM3632) || defined(CONFIG_FLED_KTD2692)
-		if(system_rev < 5){
-			CDBG("ssflaash led turn on msm_led_trigger\n");
-			ssflash_led_turn_off();
-		}else{
-			ktd2692_flash_on(0);
-			CDBG("Ktd2692 led turn on msm_led_trigger\n");
-		}
+				if(system_rev < 5){
+					pr_err("ssflaash led turn on msm_led_trigger\n");
+					ssflash_led_turn_off();
+				}else{
+					ktd2692_flash_on(0);
+					CDBG("Ktd2692 led turn on msm_led_trigger\n");
+				}
 #endif
-
+			}else if(flash_id == BACK_CAMERA_B){
 #ifdef CONFIG_FLED_SM5703_EXT_GPIO
-		if (assistive_light == true) {
-			CDBG("When assistive light, Not control flash\n");
-			return 0;
-		}
-		if (fled_info) {
-			flashlight_set_mode(fled_info->flashlight_dev, FLASHLIGHT_MODE_OFF);
-			flashlight_strobe(fled_info->flashlight_dev, TURN_WAY_GPIO);
-			sm5703_fled_notification(fled_info);
-		}
-		break;
-
+				if (assistive_light == true) {
+					CDBG("When assistive light, Not control flash\n");
+					return 0;
+				}
+				if (fled_info) {
+					flashlight_set_mode(fled_info->flashlight_dev, FLASHLIGHT_MODE_OFF);
+					flashlight_strobe(fled_info->flashlight_dev, TURN_WAY_GPIO);
+					sm5703_fled_notification(fled_info);
+				}
+				break;
 #endif
-		gpio_request(fctrl->led_irq_gpio1, NULL);
-		gpio_request(fctrl->led_irq_gpio2, NULL);
-		gpio_direction_output(fctrl->led_irq_gpio1, 0);
-		gpio_direction_output(fctrl->led_irq_gpio2, 0);
-		gpio_free(fctrl->led_irq_gpio1);
-		gpio_free(fctrl->led_irq_gpio2);
-		break;
-
-	case MSM_CAMERA_LED_LOW:
-		pr_err("MSM_CAMERA_LED_LOW\n");
-#if defined(CONFIG_FLED_LM3632) || defined(CONFIG_FLED_KTD2692)
-		if (cfg->torch_current == FRONT_CAMERA_B) {
-			if(system_rev < 5){
-				ssflash_led_turn_on();
-			}else{
-				ktd2692_flash_on(1);
+				gpio_request(fctrl->led_irq_gpio1, NULL);
+				gpio_request(fctrl->led_irq_gpio2, NULL);
+				gpio_direction_output(fctrl->led_irq_gpio1, 0);
+				gpio_direction_output(fctrl->led_irq_gpio2, 0);
+				gpio_free(fctrl->led_irq_gpio1);
+				gpio_free(fctrl->led_irq_gpio2);
+// not sure about the placement of this
 			}
 			break;
-		}
-#endif
 
-#ifdef CONFIG_FLED_SM5703_EXT_GPIO
-		if (assistive_light == true) {
-			CDBG("When assistive light, Not control flash\n");
-			return 0;
-		}
-		if (fled_info) {
-		flashlight_set_mode(fled_info->flashlight_dev, FLASHLIGHT_MODE_TORCH);
-		sm5703_fled_notification(fled_info);
-		flashlight_strobe(fled_info->flashlight_dev, TURN_WAY_GPIO);
-		}
-	break;
+	case MSM_CAMERA_LED_LOW:
+			pr_err("[CAM_LED]LED STATE LOW.\n");
+			if (flash_id == FRONT_CAMERA_B) {
+#if defined(CONFIG_FLED_LM3632) || defined(CONFIG_FLED_KTD2692)
+				if(system_rev < 5){
+					ssflash_led_turn_on();
+				}else{
+					ktd2692_flash_on(1);
+				}
+				break;
 #endif
-		gpio_request(fctrl->led_irq_gpio1, NULL);
-		gpio_direction_output(fctrl->led_irq_gpio1, 1);
-		gpio_free(fctrl->led_irq_gpio1);
-		break;
+			}else if(flash_id == BACK_CAMERA_B){
+#ifdef CONFIG_FLED_SM5703_EXT_GPIO
+				if (assistive_light == true) {
+					CDBG("When assistive light, Not control flash\n");
+					return 0;
+				}
+				if (fled_info) {
+					flashlight_set_mode(fled_info->flashlight_dev, FLASHLIGHT_MODE_TORCH);
+					sm5703_fled_notification(fled_info);
+					flashlight_strobe(fled_info->flashlight_dev, TURN_WAY_GPIO);
+				}
+				break;
+#endif
+				gpio_request(fctrl->led_irq_gpio1, NULL);
+				gpio_direction_output(fctrl->led_irq_gpio1, 1);
+				gpio_free(fctrl->led_irq_gpio1);
+
+				break;
+			}
 	case MSM_CAMERA_LED_HIGH:
-		pr_err("MSM_CAMERA_LED_HIGH\n");
+			pr_err("[CAM_LED]LED STATE HIGH.\n");
+			if(flash_id == BACK_CAMERA_B){
 #ifdef CONFIG_FLED_SM5703_EXT_GPIO
-		if (assistive_light == true) {
-			pr_err("When assistive light, Not control flash\n");
-			return 0;
-		}
-		if (fled_info) {
-			flashlight_set_mode(fled_info->flashlight_dev, FLASHLIGHT_MODE_FLASH);
-			sm5703_fled_notification(fled_info);
-			flashlight_strobe(fled_info->flashlight_dev, TURN_WAY_GPIO);
-		}
-		break;
-
+				if (assistive_light == true) {
+					pr_err("When assistive light, Not control flash\n");
+					return 0;
+				}
+				if (fled_info) {
+					flashlight_set_mode(fled_info->flashlight_dev, FLASHLIGHT_MODE_FLASH);
+					sm5703_fled_notification(fled_info);
+					flashlight_strobe(fled_info->flashlight_dev, TURN_WAY_GPIO);
+				}
+				break;
 #endif
-		gpio_request(fctrl->led_irq_gpio2, NULL);
-		gpio_direction_output(fctrl->led_irq_gpio2, 1);
-		gpio_free(fctrl->led_irq_gpio2);
-		break;
+				gpio_request(fctrl->led_irq_gpio2, NULL);
+				gpio_direction_output(fctrl->led_irq_gpio2, 1);
+				gpio_free(fctrl->led_irq_gpio2);
+				break;
+			}
 	case MSM_CAMERA_LED_INIT:
 	case MSM_CAMERA_LED_RELEASE:
-		CDBG("MSM_CAMERA_LED_INIT\n");
+			CDBG("[CAM_LED]LED STATE INIT/RELEASE.\n");
+			if(flash_id == BACK_CAMERA_B){
 #if defined(CONFIG_FLED_SM5703_EXT_GPIO)
-
-		if (assistive_light == true) {
-			CDBG("When assistive light, Not control flash\n");
-		} else if (fled_info) {
-			flashlight_set_mode(fled_info->flashlight_dev, FLASHLIGHT_MODE_OFF);
-			flashlight_strobe(fled_info->flashlight_dev, TURN_WAY_GPIO);
-			sm5703_fled_notification(fled_info);
-
-		}
-		/*for (i = 0; i < fctrl->flash_num_sources; i++)
-		{
-			if (fctrl->flash_trigger[i])
-				led_trigger_event(fctrl->flash_trigger[i], 0);
-			if (fctrl->torch_trigger)
-				led_trigger_event(fctrl->torch_trigger[i], 0);
-		}*/
-		break;
+				if (assistive_light == true) {
+					CDBG("When assistive light, Not control flash\n");
+					return 0;
+				} else if (fled_info) {
+					flashlight_set_mode(fled_info->flashlight_dev, FLASHLIGHT_MODE_OFF);
+					flashlight_strobe(fled_info->flashlight_dev, TURN_WAY_GPIO);
+					sm5703_fled_notification(fled_info);
+				}
+				break;
 
 #endif
 #if !defined(CONFIG_FLED_SM5703_EXT_GPIO)
-		for (i = 0; i < fctrl->num_sources; i++)
-			if (fctrl->flash_trigger[i])
-				led_trigger_event(fctrl->flash_trigger[i], 0);
-		if (fctrl->torch_trigger)
-			led_trigger_event(fctrl->torch_trigger, 0);
-		break;
+				for (i = 0; i < fctrl->num_sources; i++)
+					if (fctrl->flash_trigger[i])
+						led_trigger_event(fctrl->flash_trigger[i], 0);
+				if (fctrl->torch_trigger)
+					led_trigger_event(fctrl->torch_trigger, 0);
+				break;
 #endif
+			}
+
 	default:
-		pr_err("LED state error!\n");
-		rc = -EFAULT;
-		break;
+			pr_err("[CAM_LED]LED STATE error!\n");
+			rc = -EFAULT;
+			break;
 	}
 	CDBG("flash_set_led_state: return %d\n", rc);
 	return rc;
